@@ -1,2 +1,2 @@
 # SoraX
-Downloading video from the Sora app.
+Coming soon ...
