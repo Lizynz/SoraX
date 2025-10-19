@@ -1,6 +1,9 @@
 # SoraX
 
-![Preview](/1.png) ![Preview](/2.png) 
+<p align="center">
+  <img src="/1.png" width="250" alt="Preview 1">
+  <img src="/2.png" width="250" alt="Preview 2">
+</p>
 
 ### Features
 - Download
