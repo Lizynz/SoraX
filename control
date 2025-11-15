@@ -1,0 +1,10 @@
+Package: com.lizynz.sorax
+Name: SoraX
+Depends: mobilesubstrate, firmware(>=18.0)
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Downloading video from the Sora app.
+SileoDepiction: https://lizynz.github.io/depictions/com.lizynz.sorax/SoraX.json
+Maintainer: Lizynz <lizynz@ya.ru>
+Author: Lizynz <lizynz@ya.ru>
+Section: Tweaks

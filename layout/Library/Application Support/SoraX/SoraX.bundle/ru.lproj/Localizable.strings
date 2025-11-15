@@ -1,0 +1,17 @@
+/* Localizable.strings */
+
+"Download" = "Скачать";
+"Copy link" = "Копировать ссылку";
+"Quick search" = "Быстрый поиск";
+
+"Done" = "Готово";
+"Error" = "Ошибка";
+"No link" = "Нет ссылки";
+
+"Copy failed" = "Не удалось скопировать";
+"Save failed" = "Не удалось сохранить";
+
+"File corrupted" = "Файл повреждён";
+"Invalid video" = "Некорректное видео";
+
+"Cancelled" = "Отменено";

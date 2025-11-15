@@ -11,4 +11,4 @@
 - Quick search
 
 ### Compatibility
-> Supports **iOS 18.0 — 26.0.1**
+> Supports **iOS 18.0 — 26.1**

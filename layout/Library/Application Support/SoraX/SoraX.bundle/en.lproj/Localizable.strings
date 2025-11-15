@@ -1,0 +1,17 @@
+/* Localizable.strings */
+
+"Download" = "Download";
+"Copy link" = "Copy link";
+"Quick search" = "Quick search";
+
+"Done" = "Done";
+"Error" = "Error";
+"No link" = "No link";
+
+"Copy failed" = "Copy failed";
+"Save failed" = "Save failed";
+
+"File corrupted" = "File corrupted";
+"Invalid video" = "Invalid video";
+
+"Cancelled" = "Cancelled";
