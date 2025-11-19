@@ -51,6 +51,14 @@ static void cleanCFNetworkTempFiles() {
     }
 }
 
+static NSString *cleanHTTPURLFromString(NSString *rawString) {
+    NSRange range = [rawString rangeOfString:@"http"];
+    if (range.location != NSNotFound) {
+        return [rawString substringFromIndex:range.location];
+    }
+    return rawString;
+}
+
 static BOOL isValidVideoFile(NSURL *fileURL) {
     AVAsset *asset = [AVAsset assetWithURL:fileURL];
     return [asset isPlayable] && asset.tracks.count > 0;
@@ -179,6 +187,19 @@ static _TtC16NoFacePixelsCore14FeedPlayerView *findActiveFeedPlayerInSubviews(UI
 %new
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction
 configurationForMenuAtLocation:(CGPoint)location {
+    
+    CGFloat viewW = self.view.bounds.size.width;
+    CGFloat viewH = self.view.bounds.size.height;
+    
+    CGFloat disabledRatio = 0.7;
+    CGFloat disabledHeight = viewH * disabledRatio;
+    
+    CGRect disabledZone = CGRectMake(0, 0, viewW, disabledHeight);
+    
+    if (CGRectContainsPoint(disabledZone, location)) {
+        return nil;
+    }
+    
     __weak typeof(self) weakSelf = self;
     
     _TtC16NoFacePixelsCore14FeedPlayerView *playerView = findActiveFeedPlayerInSubviews(weakSelf.view);
@@ -186,9 +207,7 @@ configurationForMenuAtLocation:(CGPoint)location {
     
     AVPlayer *player = playerLayer.player;
     AVPlayerItem *item = player.currentItem;
-    if (!playerLayer || !player || !item || item.status != AVPlayerItemStatusReadyToPlay) {
-        return nil;
-    }
+    if (!playerLayer || !player || !item || item.status != AVPlayerItemStatusReadyToPlay) {}
     
     NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"NoFace_NoFaceDesignSystem" ofType:@"bundle"];
     NSBundle *designBundle = [NSBundle bundleWithPath:bundlePath];
@@ -225,8 +244,9 @@ configurationForMenuAtLocation:(CGPoint)location {
                 AVPlayerItem *activeItem = activePlayer.currentItem;
                 NSURL *videoURL = [(AVURLAsset *)activeItem.asset URL];
                 if (videoURL) {
+                    NSString *cleanString = cleanHTTPURLFromString(videoURL.absoluteString);
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        [[UIPasteboard generalPasteboard] setString:videoURL.absoluteString];
+                        [[UIPasteboard generalPasteboard] setString:cleanString];
                         [weakSelf createHUDForView:weakSelf.view
                                        withMessage:[[BHTBundle sharedBundle] localizedStringForKey:@"Done"]];
                     });
@@ -303,30 +323,38 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
     NSURL *videoURL = ([asset isKindOfClass:[AVURLAsset class]]) ? [(AVURLAsset *)asset URL] : nil;
     
     if (!activePlayer || !item || !videoURL) {
-        [self showErrorAlertWithMessage:[[BHTBundle sharedBundle] localizedStringForKey:@"Save failed"]];
+        [self showErrorAlertWithMessage:[[BHTBundle sharedBundle] localizedStringForKey:@"No video"]];
         return;
     }
     
     if ([self findHUD]) return;
+
+    NSString *cleanString = cleanHTTPURLFromString(videoURL.absoluteString);
+    NSURL *cleanVideoURL = [NSURL URLWithString:cleanString];
     
+    if (!cleanVideoURL) {
+        [self showErrorAlertWithMessage:[[BHTBundle sharedBundle] localizedStringForKey:@"Error"]];
+        return;
+    }
+
     MBProgressHUD *hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
     hud.mode = MBProgressHUDModeText;
     hud.animationType = MBProgressHUDAnimationFade;
     hud.translatesAutoresizingMaskIntoConstraints = NO;
     hud.removeFromSuperViewOnHide = YES;
-    
+
     for (UIView *subview in hud.bezelView.subviews) {
         if ([subview isKindOfClass:%c(_UIBackdropView)] || [subview isKindOfClass:[UIVisualEffectView class]]) {
             [subview removeFromSuperview];
         }
     }
-    
+
     Class glassEffectClass = %c(UIGlassEffect);
     if (glassEffectClass && @available(iOS 26.0, *)) {
         UIGlassEffect *glassEffect = [[glassEffectClass alloc] init];
         [glassEffect setValue:[UIColor colorWithWhite:0 alpha:0.3] forKey:@"tintColor"];
         [glassEffect setValue:@(YES) forKey:@"interactive"];
-        
+
         UIVisualEffectView *glassView = [[UIVisualEffectView alloc] initWithEffect:glassEffect];
         glassView.frame = hud.bezelView.bounds;
         glassView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -334,7 +362,7 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
         glassView.layer.masksToBounds = YES;
         glassView.alpha = 1.0;
         glassView.backgroundColor = UIColor.clearColor;
-        
+
         hud.bezelView.backgroundColor = UIColor.clearColor;
         [hud.bezelView insertSubview:glassView atIndex:0];
     } else {
@@ -346,7 +374,7 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
         blurView.layer.masksToBounds = YES;
         [hud.bezelView insertSubview:blurView atIndex:0];
     }
-    
+
     hud.bezelView.layer.cornerRadius = 22.0;
     hud.bezelView.layer.masksToBounds = YES;
     hud.bezelView.backgroundColor = UIColor.clearColor;
@@ -367,11 +395,10 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
         [hud.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:100.0],
         [hud.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]
     ]];
-    
+
     [self.view bringSubviewToFront:hud];
-    
     objc_setAssociatedObject(self, CurrentHUDKey, hud, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    
+
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
     cancelButton.tag = 998;
     [cancelButton setImage:[UIImage systemImageNamed:@"xmark.circle.fill"] forState:UIControlStateNormal];
@@ -380,23 +407,23 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
     [cancelButton addTarget:self action:@selector(cancelDownloading:) forControlEvents:UIControlEventTouchUpInside];
     cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
     [hud.bezelView addSubview:cancelButton];
-    
+
     [NSLayoutConstraint activateConstraints:@[
         [cancelButton.leadingAnchor constraintEqualToAnchor:hud.bezelView.leadingAnchor constant:6],
         [cancelButton.centerYAnchor constraintEqualToAnchor:hud.bezelView.centerYAnchor],
         [cancelButton.widthAnchor constraintEqualToConstant:22],
         [cancelButton.heightAnchor constraintEqualToConstant:22]
     ]];
-    
+
     NSString *uniqueFileName = [NSString stringWithFormat:@"%@.mp4", [[NSUUID UUID] UUIDString]];
     NSString *tmpPath = [NSTemporaryDirectory() stringByAppendingPathComponent:uniqueFileName];
     NSURL *localURL = [NSURL fileURLWithPath:tmpPath];
     objc_setAssociatedObject(self, CurrentLocalURLKey, localURL, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     
-    if ([videoURL isFileURL]) {
+    if ([cleanVideoURL isFileURL]) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             NSError *copyError = nil;
-            [[NSFileManager defaultManager] copyItemAtURL:videoURL toURL:localURL error:&copyError];
+            [[NSFileManager defaultManager] copyItemAtURL:cleanVideoURL toURL:localURL error:&copyError];
             dispatch_async(dispatch_get_main_queue(), ^{
                 MBProgressHUD *progressHUD = [self findHUD];
                 [progressHUD hideAnimated:YES];
@@ -413,12 +440,12 @@ styleForMenuWithConfiguration:(UIContextMenuConfiguration *)configuration {
         });
         return;
     }
-    
+
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
     config.timeoutIntervalForRequest = 30.0;
     NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
     
-    NSURLSessionDownloadTask *downloadTask = [session downloadTaskWithURL:videoURL];
+    NSURLSessionDownloadTask *downloadTask = [session downloadTaskWithURL:cleanVideoURL];
     objc_setAssociatedObject(self, DownloadTaskKey, downloadTask, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [downloadTask resume];
 }
