@@ -243,12 +243,19 @@ configurationForMenuAtLocation:(CGPoint)location {
                 AVPlayer *activePlayer = findActivePlayerInSubviews(weakSelf.view);
                 AVPlayerItem *activeItem = activePlayer.currentItem;
                 NSURL *videoURL = [(AVURLAsset *)activeItem.asset URL];
+
                 if (videoURL) {
                     NSString *cleanString = cleanHTTPURLFromString(videoURL.absoluteString);
+
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [[UIPasteboard generalPasteboard] setString:cleanString];
                         [weakSelf createHUDForView:weakSelf.view
                                        withMessage:[[BHTBundle sharedBundle] localizedStringForKey:@"Done"]];
+                    });
+                } else {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [weakSelf showErrorAlertWithMessage:
+                            [[BHTBundle sharedBundle] localizedStringForKey:@"No link"]];
                     });
                 }
             });
